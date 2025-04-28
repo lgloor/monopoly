@@ -28,11 +28,17 @@ def init_repo(path: str, name: str) -> tuple[Repo, Commit]:
     return repo, initial_commit
 
 
-def init_auction_repo(path: str, name: str, players: list[str], initial_money: list[int]) -> tuple[Repo, Commit]:
+def init_auction_repo(path: str, name: str, players: list[str], initial_money: list[int], creator: str = None) -> tuple[Repo, Commit]:
     if os.path.exists(f'{path}/{name}'):
         raise FileExistsError(f'Repo {name} already exists')
 
-    creator = players[0]
+    assert not len(players) == 0, "Players list cannot be empty"
+
+    if not creator:
+        creator = players[0]
+    else:
+        assert creator in players, "Creator must be one of players"
+
     repo = git.Repo.init(f"{path}/{name}", initial_branch=creator)
 
     # Create initial state
