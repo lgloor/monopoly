@@ -4,6 +4,8 @@ from random import Random
 import git
 import yaml
 
+from globals import read_state
+
 
 def simulate_auction(repo: git.Repo, initial_commit: git.Commit, players: list[str]) -> None:
     """
@@ -328,18 +330,3 @@ def check_win_with_higher_bid(state: dict) -> None:
         if state[p2]['winner'] == p and not state[p]['bid'] > state[p2]['bid']:
             raise Exception(f"Win with higher bid invariant violated: {p} won with a bid of {state[p]['bid']} but {p2} had a higher bid of {state[p2]['bid']}")
 
-
-
-
-def read_state(repo: git.Repo, p: str) -> dict:
-    """
-    Read the state from the repository for the specified player
-    :param repo: git repository
-    :param p: player who's state to read
-    :return: state dictionary
-    """
-
-    repo.git.checkout(p)
-    with open(f"{repo.working_tree_dir}/state.yml", 'r') as f:
-        state = yaml.safe_load(f)
-    return state

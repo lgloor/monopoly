@@ -1,6 +1,6 @@
 import git
 
-from auction import simulate_auction
+from auction_local import simulate_auction
 from globals import ROOT, STARTING_MONEY, N_PLAYERS
 from repo_util import init_auction_repo
 
@@ -31,4 +31,4 @@ def run_simulations(start_number: int, iterations: int):
 
 
 if __name__ == '__main__':
-    run_simulations(start_number=30, iterations=30)
+    run_simulations(start_number=1, iterations=1)
