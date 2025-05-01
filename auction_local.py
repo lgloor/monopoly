@@ -4,8 +4,6 @@ from random import Random
 import git
 import yaml
 
-from globals import read_state
-
 
 def simulate_auction(repo: git.Repo, initial_commit: git.Commit, players: list[str]) -> None:
     """
@@ -264,8 +262,8 @@ def all_others_meet_conditions(p: str, state: dict) -> bool:
     others = set(state.keys()).difference({p})
     for p2 in others:
         if (state[p2]['last_action'] != 'PASS' or
-            state[p]['bid'] <= state[p2]['bid'] or
-            state[p]['round'] <= state[p2]['round']):
+                state[p]['bid'] <= state[p2]['bid'] or
+                state[p]['round'] <= state[p2]['round']):
             return False
     return True
 
@@ -288,7 +286,7 @@ def get_winner(state: dict) -> str:
             continue
 
         return p
-    return "" # never happens because of the check in is_choose_winner_enabled
+    return ""  # never happens because of the check in is_choose_winner_enabled
 
 
 def write_and_commit(repo: git.Repo, state: dict, committer: str, message: str,
@@ -305,28 +303,47 @@ def write_and_commit(repo: git.Repo, state: dict, committer: str, message: str,
                       author=author,
                       committer=author)
 
+
 def check_invariants(state: dict) -> None:
     check_agreement(state)
     check_solvability(state)
     check_win_with_higher_bid(state)
 
+
 def check_agreement(state: dict) -> None:
     players = state.keys()
     for p, p2 in itertools.product(players, players):
-        if not (state[p]['winner'] =='UNKNOWN'
+        if not (state[p]['winner'] == 'UNKNOWN'
                 or state[p2]['winner'] == 'UNKNOWN'
                 or state[p]['winner'] == state[p2]['winner']):
             raise Exception(f"Agreement invariant violated: {p} and {p2} disagree on the winner")
 
+
 def check_solvability(state: dict) -> None:
     for p in state.keys():
         if state[p]['bid'] not in range(0, state[p]['money'] + 1):
-            raise Exception(f"Solvability invariant violated: {p} has bid {state[p]['bid']} but only has {state[p]['money']} money")
+            raise Exception(
+                f"Solvability invariant violated: {p} has bid {state[p]['bid']} but only has {state[p]['money']} money")
+
 
 def check_win_with_higher_bid(state: dict) -> None:
     for p, p2 in itertools.product(state.keys(), state.keys()):
         if p == p2:
             continue
         if state[p2]['winner'] == p and not state[p]['bid'] > state[p2]['bid']:
-            raise Exception(f"Win with higher bid invariant violated: {p} won with a bid of {state[p]['bid']} but {p2} had a higher bid of {state[p2]['bid']}")
+            raise Exception(
+                f"Win with higher bid invariant violated: {p} won with a bid of {state[p]['bid']} but {p2} had a higher bid of {state[p2]['bid']}")
 
+
+def read_state(repo: git.Repo, p: str) -> dict:
+    """
+    Read the state from the repository for the specified player
+    :param repo: git repository
+    :param p: player who's state to read
+    :return: state dictionary
+    """
+
+    repo.git.checkout(p)
+    with open(f"{repo.working_tree_dir}/state.yml", 'r') as f:
+        state = yaml.safe_load(f)
+    return state
