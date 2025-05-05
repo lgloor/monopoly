@@ -75,6 +75,14 @@ def get_unmortgageable_property_idxs(player: str, state: dict) -> list[int]:
     return unmortgageable_properties
 
 
+def unmortgage_property(player: str, state: dict, prop_idx: int):
+    prop = state[BOARD][prop_idx]
+    mortgage_value = prop[VALUE] // 2
+    unmortgage_cost = mortgage_value + (mortgage_value // 10)
+    pay_bank(player, state, unmortgage_cost)
+    prop[MORTGAGED] = False
+
+
 def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
     mortgageable_properties = []
     for i, square in enumerate(state[BOARD]):
@@ -90,14 +98,6 @@ def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
         mortgageable_properties.append(i)
 
     return mortgageable_properties
-
-
-def unmortgage_property(player: str, state: dict, prop_idx: int):
-    prop = state[BOARD][prop_idx]
-    mortgage_value = prop[VALUE] // 2
-    unmortgage_cost = mortgage_value + (mortgage_value // 10)
-    pay_bank(player, state, unmortgage_cost)
-    prop[MORTGAGED] = False
 
 
 # Mortgaging property does not change the rent level
