@@ -2,7 +2,6 @@ from constants import *
 from typing import Callable
 
 
-
 def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Callable[[], None]]]:
     enabled = [('End pre-roll',
                 lambda: end_pre_roll(state))]
@@ -15,9 +14,13 @@ def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Ca
     if is_pay_jail_fine_enabled(player, state):
         enabled.append(('Pay Jail Fine $50',
                         lambda: pay_jail_fine(player, state)))
+    for idx in get_unmortgageable_property_idxs(player, state):
+        enabled.append((f'Unmortgage {state[BOARD][idx][NAME]}',
+                        lambda: unmortgage_property(player, state, idx)))
     for idx in get_mortgageable_property_idxs(player, state):
         enabled.append((f'Mortgage {state[BOARD][idx][NAME]}',
                         lambda: mortgage_property(player, state, idx)))
+
     return enabled
 
 
@@ -55,12 +58,37 @@ def pay_jail_fine(player: str, state: dict):
     state[PLAYERS][player][JAIL_TIME] = 0
 
 
+def get_unmortgageable_property_idxs(player: str, state: dict) -> list[int]:
+    unmortgageable_properties = []
+
+    for i, square in enumerate(state[BOARD]):
+        if (not is_property(square)
+                or square[OWNER] != player
+                or not square[MORTGAGED]):
+            continue
+
+        mortgage_value = square[VALUE] // 2
+        unmortgage_cost = mortgage_value + (mortgage_value // 10)
+        if state[PLAYERS][player][MONEY] >= unmortgage_cost:
+            unmortgageable_properties.append(i)
+
+    return unmortgageable_properties
+
+
+def unmortgage_property(player: str, state: dict, prop_idx: int):
+    prop = state[BOARD][prop_idx]
+    mortgage_value = prop[VALUE] // 2
+    unmortgage_cost = mortgage_value + (mortgage_value // 10)
+    pay_bank(player, state, unmortgage_cost)
+    prop[MORTGAGED] = False
+
+
 def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
     mortgageable_properties = []
     for i, square in enumerate(state[BOARD]):
-        if not (is_property(square)
-                and square[OWNER] == player
-                and not square[MORTGAGED]):
+        if (not is_property(square)
+                or square[OWNER] != player
+                or square[MORTGAGED]):
             continue
 
         # Cannot mortgage streets with houses or hotels
