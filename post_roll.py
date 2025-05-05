@@ -10,7 +10,8 @@ def get_enabled_post_roll_actions(player: str, state: dict) -> list[tuple[str, C
     if (is_do_nothing_on_own_property_enabled(player, state)
             or is_do_nothing_on_go_enabled(player, state)
             or is_do_nothing_on_free_parking_enabled(player, state)
-            or is_do_nothing_on_jail_enabled(player, state)):
+            or is_do_nothing_on_jail_enabled(player, state)
+            or is_do_nothing_on_mortgaged_property_enabled(player, state)):
         enabled.append(('Do nothing',
                         lambda: end_post_roll(state)))
     if is_pay_street_or_rail_rent_enabled(player, state):
@@ -60,6 +61,11 @@ def is_do_nothing_on_jail_enabled(player: str, state: dict) -> bool:
     return square[TYPE] == JAIL
 
 
+def is_do_nothing_on_mortgaged_property_enabled(player: str, state: dict) -> bool:
+    square = state[BOARD][state[PLAYERS][player][POSITION]]
+    return is_property(square) and square[MORTGAGED]
+
+
 def end_post_roll(state: dict):
     state[PHASE] = DOUBLES_CHECK
 
@@ -73,7 +79,7 @@ def is_pay_street_or_rail_rent_enabled(player: str, state: dict) -> bool:
 
     rent = square[RENT][square[LEVEL]]
     money = state[PLAYERS][player][MONEY]
-    return money >= rent
+    return not square[MORTGAGED] and money >= rent
 
 
 def pay_street_or_rail_rent(player: str, state: dict):
@@ -94,7 +100,7 @@ def is_prevent_bankruptcy_on_street_or_rail_rent_enabled(player: str, state: dic
 
     rent = square[RENT][square[LEVEL]]
     money = state[PLAYERS][player][MONEY]
-    return money < rent
+    return not square[MORTGAGED] and money < rent
 
 
 def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
@@ -116,7 +122,7 @@ def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
 def is_try_pay_util_rent_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
-    return square[TYPE] == UTILITY and square[OWNER] not in {None, player}
+    return square[TYPE] == UTILITY and square[OWNER] not in {None, player} and not square[MORTGAGED]
 
 
 def try_pay_util_rent(player: str, state: dict):
