@@ -1,7 +1,7 @@
 import git
 
 from auction_local import simulate_auction
-from globals import ROOT, STARTING_MONEY, N_PLAYERS
+from constants import ROOT, STARTING_MONEY, N_PLAYERS
 from repo_util import init_auction_repo
 
 
