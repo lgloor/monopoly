@@ -158,7 +158,7 @@ def pay_tax(player: str, state: dict):
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
     amount = square[VALUE]
-    pay_bank(player, amount, state)
+    pay_bank(player, state, amount)
 
 
 def is_prevent_bankruptcy_on_tax_enabled(player: str, state: dict) -> bool:
@@ -197,7 +197,7 @@ def buy_property(player: str, state: dict):
     square = state[BOARD][position]
     amount = square[VALUE]
 
-    pay_bank(player, amount, state)
+    pay_bank(player, state, amount)
     square[OWNER] = player
 
 
@@ -268,7 +268,7 @@ def _draw_and_execute_card(player: str, state: dict, cards: list, max_idx: int):
             state[PHASE] = DOUBLES_CHECK
         case constants.PAY:
             if state[PLAYERS][player][MONEY] >= card[AMOUNT]:
-                pay_bank(player, card[AMOUNT], state)
+                pay_bank(player, state, card[AMOUNT])
             else:
                 state[PHASE] = BANKRUPTCY_PREVENTION
                 state[DEBT] = {

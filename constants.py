@@ -154,7 +154,7 @@ def collect_from_bank(player: str, state: dict, amount: int):
         state[BANK_MONEY] = 0
 
 
-def pay_bank(player: str, amount: int, state: dict):
+def pay_bank(player: str, state: dict, amount: int):
     state[PLAYERS][player][MONEY] -= amount
     state[BANK][BANK_MONEY] += amount
 

@@ -50,7 +50,7 @@ def is_pay_jail_fine_enabled(player: str, state: dict) -> bool:
 
 
 def pay_jail_fine(player: str, state: dict):
-    pay_bank(player, 50, state)
+    pay_bank(player, state, 50)
     state[PLAYERS][player][IN_JAIL] = False
     state[PLAYERS][player][JAIL_TIME] = 0
 
