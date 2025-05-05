@@ -166,9 +166,11 @@ def go_to_jail(player: str, state: dict):
     player_state[POSITION] = JAIL_IDX
     state[PHASE] = FREE_4_ALL
 
+
 def collect_if_pass_go(player: str, state: dict, old_pos: int, new_pos: int):
     if new_pos < old_pos:
         collect_from_bank(player, state, 200)
+
 
 def is_property(square: dict) -> bool:
     return square[TYPE] in {STREET, RAIL, UTILITY}
