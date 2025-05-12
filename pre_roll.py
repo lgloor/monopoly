@@ -91,13 +91,23 @@ def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
                 or square[MORTGAGED]):
             continue
 
-        # Cannot mortgage streets with houses or hotels
-        if square[TYPE] == STREET and square[LEVEL] > 1:
+        # Cannot mortgage streets where any street from the same set has buildings
+        if square[TYPE] == STREET and any_street_from_same_set_has_buildings(state, i):
             continue
 
         mortgageable_properties.append(i)
 
     return mortgageable_properties
+
+
+def any_street_from_same_set_has_buildings(state: dict, prop_idx: int) -> bool:
+    street = state[BOARD][prop_idx]
+    for square in state[BOARD]:
+        if (square[TYPE] == STREET
+                and square[SET] == street[SET]
+                and square[LEVEL] > 0):
+            return True
+    return False
 
 
 # Mortgaging property does not change the rent level

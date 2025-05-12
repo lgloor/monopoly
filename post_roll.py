@@ -14,9 +14,12 @@ def get_enabled_post_roll_actions(player: str, state: dict) -> list[tuple[str, C
             or is_do_nothing_on_mortgaged_property_enabled(player, state)):
         enabled.append(('Do nothing',
                         lambda: end_post_roll(state)))
-    if is_pay_street_or_rail_rent_enabled(player, state):
+    if is_pay_street_rent_enabled(player, state):
         enabled.append((f'Pay rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
-                        lambda: pay_street_or_rail_rent(player, state)))
+                        lambda: pay_street_rent(player, state)))
+    if is_pay_rail_rent_enabled(player, state):
+        enabled.append((f'Pay rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
+                        lambda: pay_rail_rent(player, state)))
     if is_prevent_bankruptcy_on_street_or_rail_rent_enabled(player, state):
         enabled.append((f'Prevent bankruptcy on rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
                         lambda: prevent_bankruptcy_on_street_or_rail_rent(player, state)))
@@ -70,37 +73,89 @@ def end_post_roll(state: dict):
     state[PHASE] = DOUBLES_CHECK
 
 
-def is_pay_street_or_rail_rent_enabled(player: str, state: dict) -> bool:
+def is_pay_street_rent_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
-    if (square[TYPE] not in {STREET, RAIL}
-            or square[OWNER] in {None, player}):
+    if (square[TYPE] != STREET
+            or square[OWNER] in {None, player}
+            or square[MORTGAGED]):
         return False
 
-    rent = square[RENT][square[LEVEL]]
+    rent = get_street_rent(state, position)
     money = state[PLAYERS][player][MONEY]
-    return not square[MORTGAGED] and money >= rent
+    return money >= rent
 
 
-def pay_street_or_rail_rent(player: str, state: dict):
+def pay_street_rent(player: str, state: dict):
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
     owner = square[OWNER]
-    rent = square[RENT][square[LEVEL]]
+    rent = get_street_rent(state, position)
+
     pay_player(player, owner, rent, state)
     state[PHASE] = DOUBLES_CHECK
+
+
+def get_street_rent(state: dict, position: int) -> int:
+    square = state[BOARD][position]
+    if square[LEVEL] > 0:
+        return square[RENT][square[LEVEL]]
+    owner = square[OWNER]
+    owns_all_of_set = True
+    for s in state[BOARD]:
+        if (s[SET] == square[SET]
+                and s[OWNER] != owner):
+            owns_all_of_set = False
+            break
+    if owns_all_of_set:
+        return square[RENT][0] * 2
+    return square[RENT][0]
+
+
+def is_pay_rail_rent_enabled(player: str, state: dict) -> bool:
+    position = state[PLAYERS][player][POSITION]
+    square = state[BOARD][position]
+    if (square[TYPE] != RAIL
+            or square[OWNER] in {None, player}
+            or square[MORTGAGED]):
+        return False
+
+    rent = get_owed_rail_rent(state, position)
+    money = state[PLAYERS][player][MONEY]
+    return money >= rent
+
+
+def pay_rail_rent(player: str, state: dict):
+    position = state[PLAYERS][player][POSITION]
+    square = state[BOARD][position]
+    owner = square[OWNER]
+    rent = get_owed_rail_rent(state, position)
+    pay_player(player, owner, rent, state)
+    state[PHASE] = DOUBLES_CHECK
+
+
+def get_owed_rail_rent(state: dict, position: int) -> int:
+    square = state[BOARD][position]
+    owner = square[OWNER]
+    n_owned_railroads = 0
+    for s in state[BOARD]:
+        if (s[TYPE] == RAIL
+                and s[OWNER] == owner):
+            n_owned_railroads += 1
+    return 25 * (2 ** (n_owned_railroads - 1))
 
 
 def is_prevent_bankruptcy_on_street_or_rail_rent_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
     if (square[TYPE] not in {STREET, RAIL}
-            or square[OWNER] in {None, player}):
+            or square[OWNER] in {None, player}
+            or square[MORTGAGED]):
         return False
 
     rent = square[RENT][square[LEVEL]]
     money = state[PLAYERS][player][MONEY]
-    return not square[MORTGAGED] and money < rent
+    return money < rent
 
 
 def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
@@ -122,23 +177,26 @@ def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
 def is_try_pay_util_rent_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
-    return square[TYPE] == UTILITY and square[OWNER] not in {None, player} and not square[MORTGAGED]
+    return (square[TYPE] == UTILITY
+            and square[OWNER] not in {None, player}
+            and not square[MORTGAGED])
 
 
 def try_pay_util_rent(player: str, state: dict):
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
-    level = square[LEVEL]
 
     rand = Random(str(state))
     d1 = rand.randint(1, 6)
     d2 = rand.randint(1, 6)
-    multiplier = 4 if level == 0 else 10
-    rent = (d1 + d2) * multiplier
 
     owner = square[OWNER]
+    multiplier = 10 if owns_both_utilities(owner, state) else 4
+    rent = (d1 + d2) * multiplier
+
     if state[PLAYERS][player][MONEY] >= rent:
         pay_player(player, owner, rent, state)
+        state[PHASE] = DOUBLES_CHECK
     else:
         state[PHASE] = BANKRUPTCY_PREVENTION
         state[DEBT] = {
@@ -146,6 +204,11 @@ def try_pay_util_rent(player: str, state: dict):
             AMOUNT: rent,
             NEXT_PHASE: DOUBLES_CHECK
         }
+
+
+def owns_both_utilities(owner: str, state: dict) -> bool:
+    owned_utilities = [s for s in state[BOARD] if s[TYPE] == UTILITY and s[OWNER] == owner]
+    return len(owned_utilities) == 2
 
 
 def is_pay_tax_enabled(player: str, state: dict) -> bool:
@@ -180,10 +243,6 @@ def prevent_bankruptcy_on_tax(player: str, state: dict):
     }
 
 
-# TODO if time: Differentiate between property types. For streets, check if
-# player owns whole set. For railroads, check amount of railroads owned by
-# player. For utilities, check amount of utilities owned by player and
-# increase level accordingly.
 def is_buy_property_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
