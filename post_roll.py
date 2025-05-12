@@ -2,6 +2,7 @@ from random import Random
 from typing import Callable
 
 import constants
+from auction import initialize_auction
 from constants import *
 
 
@@ -262,23 +263,7 @@ def is_auction_property_enabled(player: str, state: dict) -> bool:
 
 
 def auction_property(player: str, state: dict):
-    square_index = state[PLAYERS][player][POSITION]
-    auction = {
-        ASSET: square_index,
-        INITIATOR: player,
-        PLAYERS: {}
-    }
-
-    for p in state[ORDER]:
-        auction[PLAYERS][p] = {
-            BID: 0,
-            LAST_ACTION: CHANGE,
-            ROUND: 0,
-            WINNER: UNKNOWN
-        }
-
-    state[PHASE] = AUCTION
-    state[AUCTION] = auction
+    initialize_auction(player, state[PLAYERS][player][POSITION], state)
 
 
 def is_draw_and_execute_card_enabled(player: str, state: dict) -> bool:
@@ -334,7 +319,7 @@ def _draw_and_execute_card(player: str, state: dict, cards: list, max_idx: int):
             # Phase remains POST_ROLL -> pay rent if owned by other player etc.
         case constants.GO_TO_JAIL:
             go_to_jail(player, state)
-            state[PHASE] = FREE_4_ALL
+            initialize_free_4_all(state)
         case constants.GOOFJ_CC:
             state[GOOJF_CC_OWNER] = player
             state[PHASE] = DOUBLES_CHECK

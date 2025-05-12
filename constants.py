@@ -1,10 +1,13 @@
 import os
 
+from free_4_all import initialize_free_4_all
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 N_PLAYERS: int = 3
 STARTING_MONEY: int = 40
 
 PLAYERS = 'players'
+BANKRUPT = 'bankrupt'
 IN_JAIL = 'in_jail'
 JAIL_TIME = 'jail_time'
 CONSECUTIVE_DOUBLES = 'consecutive_doubles'
@@ -49,6 +52,7 @@ ROLL = 'roll'
 POST_ROLL = 'post-roll'
 DOUBLES_CHECK = 'doubles-check'
 FREE_4_ALL = 'free-4-all'
+FREE_4_ALL_ORDER = 'free-4-all-order'
 BANKRUPTCY_PREVENTION = 'bankruptcy-prevention'
 AUCTION = 'auction'
 
@@ -59,6 +63,7 @@ LAST_ACTION = 'last-action'
 ROUND = 'round'
 WINNER = 'winner'
 CHANGE = 'change'
+PASS = 'pass'
 
 UNKNOWN = 'unknown'
 
@@ -159,7 +164,7 @@ def go_to_jail(player: str, state: dict):
     player_state[IN_JAIL] = True
     player_state[CONSECUTIVE_DOUBLES] = 0
     player_state[POSITION] = JAIL_IDX
-    state[PHASE] = FREE_4_ALL
+    initialize_free_4_all(state)
 
 
 def collect_if_pass_go(player: str, state: dict, old_pos: int, new_pos: int):

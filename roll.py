@@ -80,4 +80,3 @@ def move_after_roll(player: str, state: dict, amount: int):
     new_pos = (old_pos + amount) % len(INIT_BOARD)
     collect_if_pass_go(player, state, old_pos, new_pos)
     state[PLAYERS][player][POSITION] = new_pos
-
