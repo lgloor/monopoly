@@ -97,19 +97,13 @@ def pay_street_rent(player: str, state: dict):
 
 
 def get_street_rent(state: dict, position: int) -> int:
-    square = state[BOARD][position]
-    if square[LEVEL] > 0:
-        return square[RENT][square[LEVEL]]
-    owner = square[OWNER]
-    owns_all_of_set = True
-    for s in state[BOARD]:
-        if (s[SET] == square[SET]
-                and s[OWNER] != owner):
-            owns_all_of_set = False
-            break
-    if owns_all_of_set:
-        return square[RENT][0] * 2
-    return square[RENT][0]
+    street = state[BOARD][position]
+    if street[LEVEL] > 0:
+        return street[RENT][street[LEVEL]]
+    owner = street[OWNER]
+    if owns_all_of_same_set(owner, street[SET], state):
+        return street[RENT][0] * 2
+    return street[RENT][0]
 
 
 def is_pay_rail_rent_enabled(player: str, state: dict) -> bool:

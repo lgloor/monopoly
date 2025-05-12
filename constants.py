@@ -169,3 +169,12 @@ def collect_if_pass_go(player: str, state: dict, old_pos: int, new_pos: int):
 
 def is_property(square: dict) -> bool:
     return square[TYPE] in {STREET, RAIL, UTILITY}
+
+
+def owns_all_of_same_set(owner: str, n_set: int, state: dict) -> bool:
+    for s in state[BOARD]:
+        if (s[TYPE] == STREET
+                and s[SET] == n_set
+                and s[OWNER] != owner):
+            return False
+    return True

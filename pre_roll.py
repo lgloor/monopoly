@@ -20,6 +20,12 @@ def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Ca
     for idx in get_mortgageable_property_idxs(player, state):
         enabled.append((f'Mortgage {state[BOARD][idx][NAME]}',
                         lambda: mortgage_property(player, state, idx)))
+    for idx in get_upgradeable_street_idxs(player, state):
+        enabled.append((f'Upgrade {state[BOARD][idx][NAME]}',
+                        lambda: upgrade_street(player, state, idx)))
+    for idx in get_downgradeable_street_idxs(player, state):
+        enabled.append((f'Downgrade {state[BOARD][idx][NAME]}',
+                        lambda: downgrade_street(player, state, idx)))
 
     return enabled
 
@@ -117,3 +123,60 @@ def mortgage_property(player: str, state: dict, prop_idx: int):
     mortgage_value = prop[VALUE] // 2
     collect_from_bank(player, state, mortgage_value)
     prop[MORTGAGED] = True
+
+
+def get_upgradeable_street_idxs(player: str, state: dict) -> list[int]:
+    upgradeable_streets = []
+    money = state[PLAYERS][player][MONEY]
+    for i, square in enumerate(state[BOARD]):
+        if (square[TYPE] == STREET
+                and square[OWNER] == player
+                and square[LEVEL] < 5
+                and money >= square[HOUSE_COST]
+                and owns_all_of_same_set(player, square[SET], state)
+                and all_from_set_are_higher_or_equal_level(state, square[SET], square[LEVEL])):
+            upgradeable_streets.append(i)
+    return upgradeable_streets
+
+
+def all_from_set_are_higher_or_equal_level(state: dict, n_set: int, level: int):
+    for s in state[BOARD]:
+        if (s[TYPE] == STREET
+                and s[SET] == n_set
+                and s[LEVEL] < level):
+            return False
+    return True
+
+
+def upgrade_street(player: str, state: dict, prop_idx: int):
+    prop = state[BOARD][prop_idx]
+    house_cost = prop[HOUSE_COST]
+    prop[LEVEL] += 1
+    pay_bank(player, state, house_cost)
+
+
+def get_downgradeable_street_idxs(player: str, state: dict) -> list[int]:
+    downgradeable_streets = []
+    for i, square in enumerate(state[BOARD]):
+        if (square[TYPE] == STREET
+                and square[OWNER] == player
+                and square[LEVEL] > 0
+                and all_from_set_are_lower_or_equal_level(state, square[SET], square[LEVEL])):
+            downgradeable_streets.append(i)
+    return downgradeable_streets
+
+
+def all_from_set_are_lower_or_equal_level(state: dict, n_set: int, level: int):
+    for s in state[BOARD]:
+        if (s[TYPE] == STREET
+                and s[SET] == n_set
+                and s[LEVEL] > level):
+            return False
+    return True
+
+
+def downgrade_street(player: str, state: dict, prop_idx: int):
+    prop = state[BOARD][prop_idx]
+    house_cost = prop[HOUSE_COST]
+    prop[LEVEL] -= 1
+    collect_from_bank(player, state, house_cost // 2)
