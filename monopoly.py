@@ -4,6 +4,7 @@ import git
 import yaml
 
 from auction import get_enabled_auction_actions
+from bankruptcy_prevention import get_enabled_bankruptcy_prevention_actions
 from constants import *
 from doubles_check import doubles_check
 from free_4_all import get_enabled_free_4_all_actions
@@ -26,6 +27,8 @@ def get_enabled_actions(player: str, state: dict) -> list:
         elif state[PHASE] == DOUBLES_CHECK:
             enabled.append(("Doubles check",
                             lambda: doubles_check(player, state)))
+        elif state[PHASE] == BANKRUPTCY_PREVENTION:
+            enabled.extend(get_enabled_bankruptcy_prevention_actions(player, state))
 
     if state[PHASE] == FREE_4_ALL:
         enabled.extend(get_enabled_free_4_all_actions(player, state))
