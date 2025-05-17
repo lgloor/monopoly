@@ -13,7 +13,7 @@ from pre_roll import get_enabled_pre_roll_actions
 from roll import get_enabled_roll_actions
 
 
-def get_enabled_actions(player: str, state: dict) -> list:
+def get_enabled_actions(player: str, state: dict, sim: bool) -> list:
     enabled: list[tuple[str, Callable[[], None]]] = []
 
     active_player = state[ORDER][state[ACTIVE]]
@@ -33,7 +33,7 @@ def get_enabled_actions(player: str, state: dict) -> list:
     if state[PHASE] == FREE_4_ALL:
         enabled.extend(get_enabled_free_4_all_actions(player, state))
     elif state[PHASE] == AUCTION:
-        enabled.extend(get_enabled_auction_actions(player, state))
+        enabled.extend(get_enabled_auction_actions(player, state, sim))
     return enabled
 
 
