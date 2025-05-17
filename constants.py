@@ -64,8 +64,10 @@ ROUND = 'round'
 WINNER = 'winner'
 CHANGE = 'change'
 PASS = 'pass'
+STAND = 'stand'
 
 UNKNOWN = 'unknown'
+NONE = 'none'
 
 COLLECT = 'collect'
 PAY = 'pay'
