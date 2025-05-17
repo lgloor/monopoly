@@ -161,7 +161,7 @@ def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
 
     debt = {
         CREDITOR: owner,
-        DEBT: rent,
+        AMOUNT: rent,
         NEXT_PHASE: DOUBLES_CHECK
     }
 
@@ -233,7 +233,7 @@ def prevent_bankruptcy_on_tax(player: str, state: dict):
     state[PHASE] = BANKRUPTCY_PREVENTION
     state[DEBT] = {
         CREDITOR: BANK,
-        DEBT: tax,
+        AMOUNT: tax,
         NEXT_PHASE: DOUBLES_CHECK
     }
 
