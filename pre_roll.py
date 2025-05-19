@@ -14,18 +14,21 @@ def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Ca
     if is_pay_jail_fine_enabled(player, state):
         enabled.append(('Pay Jail Fine $50',
                         lambda: pay_jail_fine(player, state)))
+
+    # Default parameters in lambdas are needed to capture current value of idx.
+    # Otherwise, it will be the last value of idx in the loop.
     for idx in get_unmortgageable_property_idxs(player, state):
         enabled.append((f'Unmortgage {state[BOARD][idx][NAME]}',
-                        lambda: unmortgage_property(player, state, idx)))
+                        lambda idx_=idx: unmortgage_property(player, state, idx_)))
     for idx in get_mortgageable_property_idxs(player, state):
         enabled.append((f'Mortgage {state[BOARD][idx][NAME]}',
-                        lambda: mortgage_property(player, state, idx)))
+                        lambda idx_=idx: mortgage_property(player, state, idx_)))
     for idx in get_upgradeable_street_idxs(player, state):
         enabled.append((f'Upgrade {state[BOARD][idx][NAME]}',
-                        lambda: upgrade_street(player, state, idx)))
+                        lambda idx_=idx: upgrade_street(player, state, idx_)))
     for idx in get_downgradeable_street_idxs(player, state):
         enabled.append((f'Downgrade {state[BOARD][idx][NAME]}',
-                        lambda: downgrade_street(player, state, idx)))
+                        lambda idx_=idx: downgrade_street(player, state, idx_)))
 
     return enabled
 
@@ -85,8 +88,8 @@ def unmortgage_property(player: str, state: dict, prop_idx: int):
     prop = state[BOARD][prop_idx]
     mortgage_value = prop[VALUE] // 2
     unmortgage_cost = mortgage_value + (mortgage_value // 10)
-    pay_bank(player, state, unmortgage_cost)
     prop[MORTGAGED] = False
+    pay_bank(player, state, unmortgage_cost)
 
 
 def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
@@ -121,8 +124,8 @@ def any_street_from_same_set_has_buildings(state: dict, prop_idx: int) -> bool:
 def mortgage_property(player: str, state: dict, prop_idx: int):
     prop = state[BOARD][prop_idx]
     mortgage_value = prop[VALUE] // 2
-    collect_from_bank(player, state, mortgage_value)
     prop[MORTGAGED] = True
+    collect_from_bank(player, state, mortgage_value)
 
 
 def get_upgradeable_street_idxs(player: str, state: dict) -> list[int]:

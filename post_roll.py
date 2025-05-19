@@ -1,4 +1,3 @@
-from random import Random
 from typing import Callable
 
 import constants
@@ -21,9 +20,12 @@ def get_enabled_post_roll_actions(player: str, state: dict) -> list[tuple[str, C
     if is_pay_rail_rent_enabled(player, state):
         enabled.append((f'Pay rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
                         lambda: pay_rail_rent(player, state)))
-    if is_prevent_bankruptcy_on_street_or_rail_rent_enabled(player, state):
+    if is_prevent_bankruptcy_on_street_rent_enabled(player, state):
         enabled.append((f'Prevent bankruptcy on rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
-                        lambda: prevent_bankruptcy_on_street_or_rail_rent(player, state)))
+                        lambda: prevent_bankruptcy_on_street_rent(player, state)))
+    if is_prevent_bankruptcy_on_rail_rent_enabled(player, state):
+        enabled.append((f'Prevent bankruptcy on rent for {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
+                        lambda: prevent_bankruptcy_on_rail_rent(player, state)))
     if is_try_pay_util_rent_enabled(player, state):
         enabled.append(('Try to pay utility rent',
                         lambda: try_pay_util_rent(player, state)))
@@ -39,6 +41,9 @@ def get_enabled_post_roll_actions(player: str, state: dict) -> list[tuple[str, C
     if is_auction_property_enabled(player, state):
         enabled.append((f'Auction property {state[BOARD][state[PLAYERS][player][POSITION]][NAME]}',
                         lambda: auction_property(player, state)))
+    if is_go_to_jail_enabled(player, state):
+        enabled.append(('Go to jail',
+                        lambda: go_to_jail(player, state)))
     if is_draw_and_execute_card_enabled(player, state):
         enabled.append(('Draw and execute card',
                         lambda: draw_and_execute_card(player, state)))
@@ -115,7 +120,7 @@ def is_pay_rail_rent_enabled(player: str, state: dict) -> bool:
             or square[MORTGAGED]):
         return False
 
-    rent = get_owed_rail_rent(state, position)
+    rent = get_rail_rent(state, position)
     money = state[PLAYERS][player][MONEY]
     return money >= rent
 
@@ -124,12 +129,12 @@ def pay_rail_rent(player: str, state: dict):
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
     owner = square[OWNER]
-    rent = get_owed_rail_rent(state, position)
+    rent = get_rail_rent(state, position)
     pay_player(player, owner, rent, state)
     state[PHASE] = DOUBLES_CHECK
 
 
-def get_owed_rail_rent(state: dict, position: int) -> int:
+def get_rail_rent(state: dict, position: int) -> int:
     square = state[BOARD][position]
     owner = square[OWNER]
     n_owned_railroads = 0
@@ -140,24 +145,53 @@ def get_owed_rail_rent(state: dict, position: int) -> int:
     return 25 * (2 ** (n_owned_railroads - 1))
 
 
-def is_prevent_bankruptcy_on_street_or_rail_rent_enabled(player: str, state: dict) -> bool:
+def is_prevent_bankruptcy_on_street_rent_enabled(player: str, state: dict) -> bool:
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
-    if (square[TYPE] not in {STREET, RAIL}
+    if (square[TYPE] != STREET
             or square[OWNER] in {None, player}
             or square[MORTGAGED]):
         return False
 
-    rent = square[RENT][square[LEVEL]]
+    rent = get_street_rent(state, position)
     money = state[PLAYERS][player][MONEY]
     return money < rent
 
 
-def prevent_bankruptcy_on_street_or_rail_rent(player: str, state: dict):
+def prevent_bankruptcy_on_street_rent(player: str, state: dict):
     position = state[PLAYERS][player][POSITION]
     square = state[BOARD][position]
     owner = square[OWNER]
     rent = square[RENT][square[LEVEL]]
+
+    debt = {
+        CREDITOR: owner,
+        AMOUNT: rent,
+        NEXT_PHASE: DOUBLES_CHECK
+    }
+
+    state[DEBT] = debt
+    state[PHASE] = BANKRUPTCY_PREVENTION
+
+
+def is_prevent_bankruptcy_on_rail_rent_enabled(player: str, state: dict) -> bool:
+    position = state[PLAYERS][player][POSITION]
+    square = state[BOARD][position]
+    if (square[TYPE] != RAIL
+            or square[OWNER] in {None, player}
+            or square[MORTGAGED]):
+        return False
+
+    rent = get_rail_rent(state, position)
+    money = state[PLAYERS][player][MONEY]
+    return money < rent
+
+
+def prevent_bankruptcy_on_rail_rent(player: str, state: dict):
+    position = state[PLAYERS][player][POSITION]
+    square = state[BOARD][position]
+    owner = square[OWNER]
+    rent = get_rail_rent(state, position)
 
     debt = {
         CREDITOR: owner,
@@ -253,6 +287,7 @@ def buy_property(player: str, state: dict):
 
     pay_bank(player, state, amount)
     square[OWNER] = player
+    state[PHASE] = DOUBLES_CHECK
 
 
 def is_auction_property_enabled(player: str, state: dict) -> bool:
@@ -264,6 +299,12 @@ def is_auction_property_enabled(player: str, state: dict) -> bool:
 
 def auction_property(player: str, state: dict):
     initialize_auction(player, state[PLAYERS][player][POSITION], state)
+
+
+def is_go_to_jail_enabled(player: str, state: dict) -> bool:
+    position = state[PLAYERS][player][POSITION]
+    square = state[BOARD][position]
+    return square[TYPE] == GO_TO_JAIL
 
 
 def is_draw_and_execute_card_enabled(player: str, state: dict) -> bool:
@@ -284,14 +325,14 @@ def draw_and_execute_card(player: str, state: dict):
 def draw_cc_card(player: str, state: dict):
     cards = state[COMMUNITY_CHEST]
     n_cards = len(cards)
-    max_idx = n_cards if not state[GOOJF_CC_OWNER] else (n_cards - 1)
+    max_idx = n_cards - 1 if not state[GOOJF_CC_OWNER] else (n_cards - 2)
     _draw_and_execute_card(player, state, cards, max_idx)
 
 
 def draw_chance_card(player: str, state: dict):
     cards = state[CHANCE]
     n_cards = len(cards)
-    max_idx = n_cards if not state[GOOJF_CH_OWNER] else (n_cards - 1)
+    max_idx = n_cards - 1 if not state[GOOJF_CH_OWNER] else (n_cards - 2)
     _draw_and_execute_card(player, state, cards, max_idx)
 
 
@@ -307,6 +348,7 @@ def _draw_and_execute_card(player: str, state: dict, cards: list, max_idx: int):
         case constants.PAY:
             if state[PLAYERS][player][MONEY] >= card[AMOUNT]:
                 pay_bank(player, state, card[AMOUNT])
+                state[PHASE] = DOUBLES_CHECK
             else:
                 state[PHASE] = BANKRUPTCY_PREVENTION
                 state[DEBT] = {
@@ -319,7 +361,6 @@ def _draw_and_execute_card(player: str, state: dict, cards: list, max_idx: int):
             # Phase remains POST_ROLL -> pay rent if owned by other player etc.
         case constants.GO_TO_JAIL:
             go_to_jail(player, state)
-            initialize_free_4_all(state)
         case constants.GOOFJ_CC:
             state[GOOJF_CC_OWNER] = player
             state[PHASE] = DOUBLES_CHECK

@@ -14,6 +14,10 @@ def get_enabled_bankruptcy_prevention_actions(player: str, state: dict) -> list[
     for idx in get_downgradeable_street_idxs(player, state):
         enabled.append((f'Downgrade {state[BOARD][idx][NAME]}',
                         lambda: downgrade_street(player, state, idx)))
+
+    if len(enabled) == 0:
+        return [('Go bankrupt', lambda: go_bankrupt(player, state))]
+
     return enabled
 
 
@@ -40,6 +44,7 @@ def go_bankrupt(player: str, state: dict):
         transfer_all_assets_to_player(player, creditor, state)
 
     state[PLAYERS][player][BANKRUPT] = True
+    state[DEBT] = None
 
     give_turn_to_next_active_player(state)
 

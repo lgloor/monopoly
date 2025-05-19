@@ -1,10 +1,10 @@
 import os
-
-from free_4_all import initialize_free_4_all
+from random import Random
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 N_PLAYERS: int = 3
-STARTING_MONEY: int = 40
+STARTING_MONEY: int = 1500
+TOTAL_MONEY: int = 118_660
 
 PLAYERS = 'players'
 BANKRUPT = 'bankrupt'
@@ -26,7 +26,7 @@ STREET = 'street'
 RAIL = 'rail'
 UTILITY = 'util'
 CHANCE = 'chance'
-COMMUNITY_CHEST = 'cc'
+COMMUNITY_CHEST = 'community_chest'
 TAX = 'tax'
 GO = 'go'
 GO_TO_JAIL = 'go_to_jail'
@@ -145,6 +145,22 @@ INIT_BOARD = [
      HOUSE_COST: 200, LEVEL: 0, SET: 8, MORTGAGED: False},
 ]
 
+CC_CARDS = [
+    {TYPE: COLLECT, AMOUNT: 50},
+    {TYPE: PAY, AMOUNT: 50},
+    {TYPE: ADVANCE_TO, SQUARE: 39},
+    {TYPE: GO_TO_JAIL},
+    {TYPE: GOOFJ_CC}
+]
+
+CH_CARDS = [
+    {TYPE: COLLECT, AMOUNT: 50},
+    {TYPE: PAY, AMOUNT: 50},
+    {TYPE: ADVANCE_TO, SQUARE: 0},
+    {TYPE: GO_TO_JAIL},
+    {TYPE: GOOFJ_CH}
+]
+
 
 def collect_from_bank(player: str, state: dict, amount: int):
     remaining_bank_money = state[BANK_MONEY]
@@ -158,7 +174,7 @@ def collect_from_bank(player: str, state: dict, amount: int):
 
 def pay_bank(player: str, state: dict, amount: int):
     state[PLAYERS][player][MONEY] -= amount
-    state[BANK][BANK_MONEY] += amount
+    state[BANK_MONEY] += amount
 
 
 def go_to_jail(player: str, state: dict):
@@ -185,3 +201,30 @@ def owns_all_of_same_set(owner: str, n_set: int, state: dict) -> bool:
                 and s[OWNER] != owner):
             return False
     return True
+
+
+def initialize_free_4_all(state: dict):
+    assert state[FREE_4_ALL_ORDER] is None, 'Free for all must not be initialized'
+    rand = Random(str(state))
+    f4a_order: list[str] = [p for p in state[ORDER] if not state[PLAYERS][p][BANKRUPT]]
+    rand.shuffle(f4a_order)
+
+    state[PHASE] = FREE_4_ALL
+    state[FREE_4_ALL_ORDER] = f4a_order
+
+
+def get_int_from_input(prompt: str) -> int:
+    while True:
+        try:
+            return int(input(prompt))
+        except ValueError:
+            print("Invalid input. Please enter an integer.")
+
+
+def get_int_from_input_in_range(prompt: str, min_value: int, max_value: int) -> int:
+    while True:
+        value = get_int_from_input(prompt)
+        if min_value <= value <= max_value:
+            return value
+        else:
+            print(f"Invalid input. Please enter an integer between {min_value} and {max_value}.")

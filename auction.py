@@ -1,4 +1,3 @@
-from random import Random
 from typing import Callable
 
 from constants import *
@@ -92,24 +91,18 @@ def bid(player: str, state: dict, sim: bool):
     money = state[PLAYERS][player][MONEY]
     if sim:
         rand = Random(str(state))
-        amount = rand.randint(highest_bid, money)
+        amount = rand.randint(highest_bid + 1, money)
     else:
-        while True:
-            try:
-                amount = int(input(f"Enter your bid (current highest: {highest_bid}, remaining money: {money}): "))
-                if not highest_bid + 1 <= amount <= money:
-                    raise ValueError
-                else:
-                    break
-            except ValueError:
-                print("Invalid input. Please enter a valid bid.")
+        amount = get_int_from_input_in_range(
+            f"Enter your bid (current highest: {highest_bid}, remaining money: {money}): ",
+            highest_bid + 1, money)
 
     state[AUCTION][PLAYERS][player][BID] = amount
     state[AUCTION][PLAYERS][player][LAST_ACTION] = BID
 
 
 def is_pass_enabled(player: str, state: dict) -> bool:
-    return common_preconditions(player, state)
+    return common_preconditions(player, state[AUCTION])
 
 
 def do_pass(player: str, state: dict):
