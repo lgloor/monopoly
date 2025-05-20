@@ -54,14 +54,6 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
     return False
 
 
-def check_invariants_and_commit(message, repo, state):
-    check_invariants(state)
-    with open(f"{repo.working_tree_dir}/state.yml", 'w') as f:
-        yaml.dump(state, f)
-    repo.index.add(f"{repo.working_tree_dir}/state.yml")
-    repo.index.commit(f"{message}")
-
-
 def get_wanted_action(enabled_actions):
     print('==============================================================================================')
     print("Possible actions:")
@@ -120,6 +112,14 @@ def read_player_and_state(repo: git.Repo) -> tuple[str, dict]:
     with open(f"{repo.working_tree_dir}/state.yml", 'r') as f:
         state = yaml.safe_load(f)
     return player, state
+
+
+def check_invariants_and_commit(message, repo, state):
+    check_invariants(state)
+    with open(f"{repo.working_tree_dir}/state.yml", 'w') as f:
+        yaml.dump(state, f)
+    repo.index.add(f"{repo.working_tree_dir}/state.yml")
+    repo.index.commit(f"{message}")
 
 
 def check_invariants(state: dict):
