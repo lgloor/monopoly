@@ -219,7 +219,6 @@ def join_new_game(path: str, player_name: str, initiator_url: str):
         state = yaml.safe_load(f)
         players: dict = state[PLAYERS]
         for name, p_state in players.items():
-            url = p_state[URL]
             if name == player_name:
                 continue
             repo.create_remote(name, p_state[URL])
