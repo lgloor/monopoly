@@ -132,3 +132,106 @@ def init_monopoly_simulation_repos(path: str, name: str, players: list[str]) -> 
     initiating_repo.index.add(state_file_path)
     initial_commit = initiating_repo.index.commit(f"initial commit {name}")
     return repos, initial_commit
+
+
+def init_monopoly_repo(path: str, player_name:str, players: list[dict[str, str]]) -> Repo:
+    if os.path.exists(path):
+        raise FileExistsError(f'Directory {path} already exists')
+    else:
+        mkdir(path)
+
+    assert not len(players) == 0, "Players list cannot be empty"
+
+    init_state = {
+        ACTIVE: 0,
+        ORDER: [p[NAME] for p in players],
+        PHASE: PRE_ROLL,
+        FREE_4_ALL_ORDER: None,
+        GOOJF_CH_OWNER: None,
+        GOOJF_CC_OWNER: None,
+        BANK_MONEY: TOTAL_MONEY - len(players) * STARTING_MONEY,
+        WINNER: None,
+        DEBT: None,
+        AUCTION: None,
+        PLAYERS: {},
+        BOARD: INIT_BOARD,
+        COMMUNITY_CHEST: CC_CARDS,
+        CHANCE: CH_CARDS
+    }
+
+    for player in players:
+        name = player[NAME]
+        url = player[URL]
+        init_state[PLAYERS][name] = {
+            URL: url,
+            MONEY: STARTING_MONEY,
+            BANKRUPT: False,
+            IN_JAIL: False,
+            JAIL_TIME: 0,
+            POSITION: 0,
+            CONSECUTIVE_DOUBLES: 0
+        }
+
+    repo = Repo.init(path, initial_branch='main')
+
+    with open(f"{repo.working_dir}/.git/.name", 'w') as f:
+        f.write(player_name)
+
+    with open(f"{repo.working_dir}/state.yml", 'w') as f:
+        yaml.dump(init_state, f)
+
+    repo.index.add(f"{repo.working_dir}/state.yml")
+    repo.index.commit(f"initial commit monopoly")
+
+    others = [player for player in players if player['name'] != player_name]
+    for other in others:
+        name = other[NAME]
+        url = other[URL]
+        repo.create_remote(name, url)
+
+    print(f"Game initialized at {path}")
+    return repo
+
+
+def join_new_game(path: str, player_name: str, initiator_url: str):
+    if os.path.exists(path):
+        raise FileExistsError(f'Directory {path} already exists')
+    else:
+        mkdir(path)
+
+    repo = Repo.init(path, initial_branch='main')
+    with open(f"{path}/.git/.name", 'w') as f:
+        f.write(player_name)
+
+    init_remote = repo.create_remote('initiator', initiator_url)
+
+    print(f"Joining game at {initiator_url}")
+    while True:
+        try:
+            repo.git.pull('initiator', 'main')
+            break
+        except:
+            continue
+
+    repo.delete_remote(init_remote)
+
+    with open(f"{path}/state.yml", 'r') as f:
+        state = yaml.safe_load(f)
+        players: dict = state[PLAYERS]
+        for name, p_state in players.items():
+            url = p_state[URL]
+            if name == player_name:
+                continue
+            repo.create_remote(name, p_state[URL])
+
+    print(f"Joined successfully")
+    return repo
+
+
+def rejoin_game(path: str) -> Repo:
+    if not os.path.exists(path):
+        raise FileNotFoundError(f'Directory {path} does not exist')
+
+    return Repo(path)
+
+

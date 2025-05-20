@@ -31,6 +31,7 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
     player, state = read_player_and_state(repo)
 
     if is_terminated(state):
+        print("Game is terminated, WINNER: ", state[WINNER])
         return True
 
     enabled_actions = get_enabled_actions(player, state, sim)
@@ -45,19 +46,24 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
         if sim:
             message, action = rand.choice(enabled_actions)
         else:
-            action, message = get_wanted_action(enabled_actions)
+            message, action = get_wanted_action(enabled_actions)
 
     print(f"Executing action: {message}")
     action()
-    with open(f"{repo.working_tree_dir}/state.yml", 'w') as f:
-        yaml.dump(state, f)
-    check_invariants(state)
-    repo.index.add(f"{repo.working_tree_dir}/state.yml")
-    repo.index.commit(f"{message}")
+    check_invariants_and_commit(message, repo, state)
     return False
 
 
+def check_invariants_and_commit(message, repo, state):
+    check_invariants(state)
+    with open(f"{repo.working_tree_dir}/state.yml", 'w') as f:
+        yaml.dump(state, f)
+    repo.index.add(f"{repo.working_tree_dir}/state.yml")
+    repo.index.commit(f"{message}")
+
+
 def get_wanted_action(enabled_actions):
+    print('==============================================================================================')
     print("Possible actions:")
     for i, (message, action) in enumerate(enabled_actions):
         print(f"{i + 1}: {message}")

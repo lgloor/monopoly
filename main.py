@@ -1,12 +1,39 @@
 import git
 
 from constants import *
-from monopoly import simulate_monopoly
-from repo_util import init_monopoly_simulation_repos
+from monopoly import simulate_monopoly, take_action
+from repo_util import init_monopoly_simulation_repos, init_monopoly_repo, join_new_game, rejoin_game
 
 
 def create_new_game():
-    pass
+    path = get_non_existing_path_from_input("Enter a new path for the game: ")
+    player_name = get_non_empty_string_from_input("Enter player name: ")
+    player_url = get_non_empty_string_from_input("Enter the url for the other players to reach this game: ")
+
+    n_other_players = get_int_from_input_in_range("Enter the number of other players (1-5): ", 1, 5)
+    players = [{NAME: player_name, URL: player_url}]
+    for i in range(n_other_players):
+        other_player_name = get_non_empty_string_from_input(f"Enter name for player {i + 1}: ")
+        other_player_url = get_non_empty_string_from_input(f"Enter url for player {i + 1}: ")
+        players.append({NAME: other_player_name, URL: other_player_url})
+
+    repo = init_monopoly_repo(path, player_name, players)
+    game_loop(repo)
+
+
+def join_game():
+    path = get_non_existing_path_from_input("Enter a new path for the game: ")
+    player_name = get_non_empty_string_from_input("Enter player name: ")
+    initiator_url = get_non_empty_string_from_input("Enter the url for the initiator: ")
+
+    repo = join_new_game(path, player_name, initiator_url)
+    game_loop(repo)
+
+
+def rejoin():
+    path = get_existing_path_from_input("Enter the path of the existing game: ")
+    repo = rejoin_game(path)
+    game_loop(repo)
 
 
 def run_simulations(n=1):
@@ -34,15 +61,18 @@ def main():
                                          1, 3)
     match choice:
         case 1:
-            print("Creating a new game...")
-            # Add logic to create a new game
+            create_new_game()
         case 2:
-            print("Joining a new game...")
-            # Add logic to join a new game
+            join_game()
         case 3:
-            print("Rejoining an active game...")
-            # Add logic to rejoin an active game
+            rejoin()
+
+
+def game_loop(repo: git.Repo):
+    terminated = False
+    while not terminated:
+        terminated = take_action(repo)
 
 
 if __name__ == '__main__':
-    run_simulations(10)
+    main()

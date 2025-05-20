@@ -7,6 +7,7 @@ STARTING_MONEY: int = 1500
 TOTAL_MONEY: int = 118_660
 
 PLAYERS = 'players'
+URL = 'url'
 BANKRUPT = 'bankrupt'
 IN_JAIL = 'in_jail'
 JAIL_TIME = 'jail_time'
@@ -228,3 +229,31 @@ def get_int_from_input_in_range(prompt: str, min_value: int, max_value: int) -> 
             return value
         else:
             print(f"Invalid input. Please enter an integer between {min_value} and {max_value}.")
+
+
+def get_non_existing_path_from_input(prompt: str) -> str:
+    while True:
+        path = input(prompt)
+        if not os.path.exists(path):
+            return path
+        else:
+            print(f"Path {path} already exists. Please enter a different path.")
+
+
+def get_existing_path_from_input(prompt: str) -> str:
+    while True:
+        path = input(prompt)
+        if os.path.exists(path):
+            return path
+        else:
+            print(f"Path {path} does not exist. Please enter a different path.")
+
+
+def get_non_empty_string_from_input(prompt: str) -> str:
+    while True:
+        value = input(prompt)
+        if value.strip():
+            return value
+        else:
+            print("Invalid input. Please enter a non-empty string.")
+

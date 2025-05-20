@@ -68,7 +68,7 @@ def transfer_all_assets_to_bank(player: str, state: dict):
 
 
 def transfer_all_assets_to_player(p_from: str, p_to: str, state: dict):
-    pay_player(p_from, p_to, state[PLAYERS][p_to][MONEY], state)
+    pay_player(p_from, p_to, state[PLAYERS][p_from][MONEY], state)
 
     if state[GOOJF_CH_OWNER] == p_from:
         state[GOOJF_CH_OWNER] = p_to
