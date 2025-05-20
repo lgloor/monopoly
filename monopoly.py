@@ -54,14 +54,12 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
     return False
 
 
-def get_wanted_action(enabled_actions):
-    print('==============================================================================================')
-    print("Possible actions:")
-    for i, (message, action) in enumerate(enabled_actions):
-        print(f"{i + 1}: {message}")
-    choice = get_int_from_input_in_range("Choose an action: ",
-                                         1, len(enabled_actions))
-    return enabled_actions[choice - 1]  # adjust for 0-indexing
+def read_player_and_state(repo: git.Repo) -> tuple[str, dict]:
+    with open(f"{repo.working_tree_dir}/.git/.name", 'r') as f:
+        player = f.read().strip()
+    with open(f"{repo.working_tree_dir}/state.yml", 'r') as f:
+        state = yaml.safe_load(f)
+    return player, state
 
 
 def get_enabled_actions(player: str, state: dict, sim: bool) -> list:
@@ -106,12 +104,14 @@ def merge_from_remotes(repo: git.Repo):
             raise e
 
 
-def read_player_and_state(repo: git.Repo) -> tuple[str, dict]:
-    with open(f"{repo.working_tree_dir}/.git/.name", 'r') as f:
-        player = f.read().strip()
-    with open(f"{repo.working_tree_dir}/state.yml", 'r') as f:
-        state = yaml.safe_load(f)
-    return player, state
+def get_wanted_action(enabled_actions):
+    print('==============================================================================================')
+    print("Possible actions:")
+    for i, (message, action) in enumerate(enabled_actions):
+        print(f"{i + 1}: {message}")
+    choice = get_int_from_input_in_range("Choose an action: ",
+                                         1, len(enabled_actions))
+    return enabled_actions[choice - 1]  # adjust for 0-indexing
 
 
 def check_invariants_and_commit(message, repo, state):
