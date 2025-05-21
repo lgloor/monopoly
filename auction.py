@@ -25,7 +25,7 @@ def initialize_auction(initiator: str, square_idx: int, state: dict):
     state[AUCTION] = auction
 
 
-def get_enabled_auction_actions(player: str, state: dict, sim: bool = False) -> list[tuple[str, Callable[[], None]]]:
+def get_enabled_auction_actions(player: str, state: dict, sim: bool = False) -> list[tuple[str, Callable[[], str]]]:
     if state[PLAYERS][player][BANKRUPT]:
         return []
 
@@ -69,6 +69,7 @@ def all_other_bids_lower(player: str, auction_state: dict) -> bool:
 
 def stand(player: str, state: dict):
     state[AUCTION][PLAYERS][player][LAST_ACTION] = STAND
+    return f"{player} stands with a bid of {state[AUCTION][PLAYERS][player][BID]}"
 
 
 def is_bid_enabled(player: str, state: dict) -> bool:
@@ -99,6 +100,7 @@ def bid(player: str, state: dict, sim: bool):
 
     state[AUCTION][PLAYERS][player][BID] = amount
     state[AUCTION][PLAYERS][player][LAST_ACTION] = BID
+    return f"{player} bids {amount}"
 
 
 def is_pass_enabled(player: str, state: dict) -> bool:
@@ -107,6 +109,7 @@ def is_pass_enabled(player: str, state: dict) -> bool:
 
 def do_pass(player: str, state: dict):
     state[AUCTION][PLAYERS][player][LAST_ACTION] = PASS
+    return f"{player} passes"
 
 
 def common_preconditions(player: str, auction_state: dict) -> bool:
@@ -161,6 +164,7 @@ def all_made_action_or_are_ahead(player: str, state: dict) -> bool:
 def next_round(player: str, state: dict):
     state[AUCTION][PLAYERS][player][LAST_ACTION] = CHANGE
     state[AUCTION][PLAYERS][player][ROUND] += 1
+    return f"{player} moves to next round ({state[AUCTION][PLAYERS][player][ROUND]})"
 
 
 def is_choose_winner_enabled(player: str, state: dict) -> bool:
@@ -208,6 +212,7 @@ def choose_winner(player: str, state: dict):
         winner = get_winner(state)
 
     state[AUCTION][PLAYERS][player][WINNER] = winner
+    return f"{player} chooses {winner} as the winner of the auction"
 
 
 def get_winner(state: dict) -> str:
@@ -241,3 +246,4 @@ def close_auction(player: str, state: dict):
     if winner != NONE:
         pay_bank(winner, state, auction_state[PLAYERS][winner][BID])
         state[BOARD][auction_state[ASSET]][OWNER] = winner
+    return f"{player} closes auction"

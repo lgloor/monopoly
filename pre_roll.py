@@ -2,9 +2,9 @@ from constants import *
 from typing import Callable
 
 
-def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Callable[[], None]]]:
+def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Callable[[], str]]]:
     enabled = [('End pre-roll',
-                lambda: end_pre_roll(state))]
+                lambda: end_pre_roll(state, player))]
     if is_play_goojf_ch_enabled(player, state):
         enabled.append(('Play Get Out of Jail Free Chance',
                         lambda: play_goojf_ch(player, state)))
@@ -33,8 +33,9 @@ def get_enabled_pre_roll_actions(player: str, state: dict) -> list[tuple[str, Ca
     return enabled
 
 
-def end_pre_roll(state: dict):
+def end_pre_roll(state: dict, player: str) -> str:
     state[PHASE] = ROLL
+    return f"{player} ends pre-roll phase"
 
 
 def is_play_goojf_ch_enabled(player: str, state: dict) -> bool:
@@ -45,6 +46,7 @@ def play_goojf_ch(player: str, state: dict):
     state[GOOJF_CH_OWNER] = None
     state[PLAYERS][player][IN_JAIL] = False
     state[PLAYERS][player][JAIL_TIME] = 0
+    return f"{player} plays Get Out of Jail Free Chance"
 
 
 def is_play_goojf_cc_enabled(player: str, state: dict) -> bool:
@@ -55,6 +57,7 @@ def play_goojf_cc(player: str, state: dict):
     state[GOOJF_CC_OWNER] = None
     state[PLAYERS][player][IN_JAIL] = False
     state[PLAYERS][player][JAIL_TIME] = 0
+    return f"{player} plays Get Out of Jail Free Community Chest"
 
 
 def is_pay_jail_fine_enabled(player: str, state: dict) -> bool:
@@ -65,6 +68,7 @@ def pay_jail_fine(player: str, state: dict):
     pay_bank(player, state, 50)
     state[PLAYERS][player][IN_JAIL] = False
     state[PLAYERS][player][JAIL_TIME] = 0
+    return f"{player} pays $50 jail fine"
 
 
 def get_unmortgageable_property_idxs(player: str, state: dict) -> list[int]:
@@ -90,6 +94,7 @@ def unmortgage_property(player: str, state: dict, prop_idx: int):
     unmortgage_cost = mortgage_value + (mortgage_value // 10)
     prop[MORTGAGED] = False
     pay_bank(player, state, unmortgage_cost)
+    return f"{player} unmortgages {prop[NAME]} for ${unmortgage_cost}"
 
 
 def get_mortgageable_property_idxs(player: str, state: dict) -> list[int]:
@@ -126,6 +131,7 @@ def mortgage_property(player: str, state: dict, prop_idx: int):
     mortgage_value = prop[VALUE] // 2
     prop[MORTGAGED] = True
     collect_from_bank(player, state, mortgage_value)
+    return f"{player} mortgages {prop[NAME]} for ${mortgage_value}"
 
 
 def get_upgradeable_street_idxs(player: str, state: dict) -> list[int]:
@@ -156,6 +162,7 @@ def upgrade_street(player: str, state: dict, prop_idx: int):
     house_cost = prop[HOUSE_COST]
     prop[LEVEL] += 1
     pay_bank(player, state, house_cost)
+    return f"{player} upgrades {prop[NAME]} for ${house_cost} to level {prop[LEVEL]}"
 
 
 def get_downgradeable_street_idxs(player: str, state: dict) -> list[int]:
@@ -183,3 +190,4 @@ def downgrade_street(player: str, state: dict, prop_idx: int):
     house_cost = prop[HOUSE_COST]
     prop[LEVEL] -= 1
     collect_from_bank(player, state, house_cost // 2)
+    return f"{player} downgrades {prop[NAME]} for ${house_cost // 2} to level {prop[LEVEL]}"

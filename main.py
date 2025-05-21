@@ -75,4 +75,4 @@ def game_loop(repo: git.Repo):
 
 
 if __name__ == '__main__':
-    main()
+    run_simulations(3)

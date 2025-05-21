@@ -1,15 +1,15 @@
 from pre_roll import *
 
 
-def get_enabled_free_4_all_actions(player: str, state: dict) -> list[tuple[str, Callable[[], None]]]:
+def get_enabled_free_4_all_actions(player: str, state: dict) -> list[tuple[str, Callable[[], str]]]:
     if (len(state[FREE_4_ALL_ORDER]) == 0
             and state[ORDER][state[ACTIVE]] == player):
-        return [("Give turn to next active player", lambda: give_turn_to_next_active_player(state))]
+        return [("Give turn to next active player", lambda: give_turn_to_next_active_player(player, state))]
 
     if not is_own_turn_in_f4a(player, state):
         return []
 
-    enabled = [("Conclude free 4 all actions", lambda: conclude_f4a_actions(state))]
+    enabled = [("Conclude free 4 all actions", lambda: conclude_f4a_actions(player, state))]
 
     # Default parameters in lambdas are needed to capture current value of idx.
     # Otherwise, it will be the last value of idx in the loop.
@@ -34,7 +34,7 @@ def is_own_turn_in_f4a(player: str, state: dict) -> bool:
             and state[FREE_4_ALL_ORDER][0] == player)
 
 
-def give_turn_to_next_active_player(state: dict):
+def give_turn_to_next_active_player(player: str, state: dict):
     next_active = (state[ACTIVE] + 1) % len(state[ORDER])
     while state[PLAYERS][state[ORDER][next_active]][BANKRUPT]:
         next_active = (next_active + 1) % len(state[ORDER])
@@ -42,7 +42,9 @@ def give_turn_to_next_active_player(state: dict):
     state[FREE_4_ALL_ORDER] = None
     state[ACTIVE] = next_active
     state[PHASE] = PRE_ROLL
+    return f"{player} gives turn to {state[ORDER][next_active]}"
 
 
-def conclude_f4a_actions(state: dict):
+def conclude_f4a_actions(player: str ,state: dict):
     state[FREE_4_ALL_ORDER].pop(0)
+    return f"{player} concludes free 4 all actions"

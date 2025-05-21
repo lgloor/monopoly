@@ -3,7 +3,7 @@ from post_roll import pay_player
 from pre_roll import *
 
 
-def get_enabled_bankruptcy_prevention_actions(player: str, state: dict) -> list[tuple[str, Callable[[], None]]]:
+def get_enabled_bankruptcy_prevention_actions(player: str, state: dict) -> list[tuple[str, Callable[[], str]]]:
     if can_pay_off_debt(player, state):
         return [('Pay off debt', lambda: pay_off_debt(player, state))]
 
@@ -34,6 +34,7 @@ def pay_off_debt(player: str, state: dict):
         pay_player(player, creditor, amount, state)
     state[PHASE] = state[DEBT][NEXT_PHASE]
     state[DEBT] = None
+    return f"{player} pays off debt of {amount} to {creditor}"
 
 
 def go_bankrupt(player: str, state: dict):
@@ -46,7 +47,8 @@ def go_bankrupt(player: str, state: dict):
     state[PLAYERS][player][BANKRUPT] = True
     state[DEBT] = None
 
-    give_turn_to_next_active_player(state)
+    give_turn_to_next_active_player(player, state)
+    return f"{player} goes bankrupt, transfers all assets to {creditor}"
 
 
 

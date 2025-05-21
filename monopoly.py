@@ -49,8 +49,8 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
             message, action = get_wanted_action(enabled_actions)
 
     print(f"Executing action: {message}")
-    action()
-    check_invariants_and_commit(message, repo, state)
+    commit_message = action()
+    check_invariants_and_commit(commit_message, repo, state)
     return False
 
 
@@ -64,9 +64,9 @@ def read_player_and_state(repo: git.Repo) -> tuple[str, dict]:
 
 def get_enabled_actions(player: str, state: dict, sim: bool) -> list:
     if is_terminate_enabled(state):
-        return [("Terminate", lambda: terminate(state))]
+        return [("Terminate", lambda: terminate(player, state))]
 
-    enabled: list[tuple[str, Callable[[], None]]] = []
+    enabled: list[tuple[str, Callable[[], str]]] = []
 
     active_player = state[ORDER][state[ACTIVE]]
     if active_player == player:
