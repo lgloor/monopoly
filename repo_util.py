@@ -134,13 +134,11 @@ def init_monopoly_simulation_repos(path: str, name: str, players: list[str]) -> 
     return repos, initial_commit
 
 
-def init_monopoly_repo(path: str, player_name:str, players: list[dict[str, str]]) -> Repo:
-    if os.path.exists(path):
-        raise FileExistsError(f'Directory {path} already exists')
-    else:
-        mkdir(path)
-
+def init_monopoly_repo(player_url: str, player_name:str, players: list[dict[str, str]]) -> Repo:
     assert not len(players) == 0, "Players list cannot be empty"
+
+    to_path = f"./monopoly_{player_name}"
+    repo = Repo.clone_from(player_url, to_path)
 
     init_state = {
         ACTIVE: 0,
@@ -172,8 +170,6 @@ def init_monopoly_repo(path: str, player_name:str, players: list[dict[str, str]]
             CONSECUTIVE_DOUBLES: 0
         }
 
-    repo = Repo.init(path, initial_branch='main')
-
     with open(f"{repo.working_dir}/.git/.name", 'w') as f:
         f.write(player_name)
 
@@ -189,18 +185,16 @@ def init_monopoly_repo(path: str, player_name:str, players: list[dict[str, str]]
         url = other[URL]
         repo.create_remote(name, url)
 
-    print(f"Game initialized at {path}")
+    print(f"""
+    The repository has successfully been initialized at {to_path}. 
+    The other players can now join using the URL {player_url}""")
     return repo
 
 
-def join_new_game(path: str, player_name: str, initiator_url: str):
-    if os.path.exists(path):
-        raise FileExistsError(f'Directory {path} already exists')
-    else:
-        mkdir(path)
-
-    repo = Repo.init(path, initial_branch='main')
-    with open(f"{path}/.git/.name", 'w') as f:
+def join_new_game(player_url: str, player_name: str, initiator_url: str):
+    to_path = f"./monopoly_{player_name}"
+    repo = Repo.clone_from(player_url, to_path)
+    with open(f"{repo.working_dir}/.git/.name", 'w') as f:
         f.write(player_name)
 
     init_remote = repo.create_remote('initiator', initiator_url)
@@ -215,7 +209,7 @@ def join_new_game(path: str, player_name: str, initiator_url: str):
 
     repo.delete_remote(init_remote)
 
-    with open(f"{path}/state.yml", 'r') as f:
+    with open(f"{repo.working_dir}/state.yml", 'r') as f:
         state = yaml.safe_load(f)
         players: dict = state[PLAYERS]
         for name, p_state in players.items():

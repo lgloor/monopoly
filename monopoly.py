@@ -1,4 +1,6 @@
 import itertools
+import threading
+import time
 from typing import Callable
 
 import git
@@ -47,10 +49,17 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
             message, action = rand.choice(enabled_actions)
         else:
             message, action = get_wanted_action(enabled_actions)
+    if sim:
+        print(f"Executing action: {message}")
+        start_time = time.time_ns()
 
-    print(f"Executing action: {message}")
     commit_message = action()
     check_invariants_and_commit(commit_message, repo, state)
+
+    if sim:
+        execution_time = time.time_ns() - start_time
+        with open(f"{os.getcwd()}/action_times.log", "a") as log_file:
+            log_file.write(f"{execution_time}\n")
     return False
 
 
@@ -91,6 +100,10 @@ def get_enabled_actions(player: str, state: dict, sim: bool) -> list:
 
 def merge_from_remotes(repo: git.Repo):
     for remote in repo.remotes:
+        if remote.name == 'origin':
+            # Skip the origin remote, as it is not a player remote.
+            continue
+
         try:
             remote.fetch('main')
         except:
@@ -120,7 +133,23 @@ def check_invariants_and_commit(message, repo, state):
         yaml.dump(state, f)
     repo.index.add(f"{repo.working_tree_dir}/state.yml")
     repo.index.commit(f"{message}")
+    threading.Thread(target=push, args=(repo,), daemon=True).start()
 
+
+def push(repo: git.Repo):
+    while True:
+        try:
+            origin = repo.remote("origin")
+            origin.push().raise_if_error()
+            break
+        except ValueError as e:
+            # The repo does not have an origin remote
+            # e.g. case in simulations
+            # just ignore it
+             break
+        except:
+            # Push failed, wait a bit and try again
+            time.sleep(2)
 
 def check_invariants(state: dict):
     try:

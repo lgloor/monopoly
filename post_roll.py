@@ -78,7 +78,7 @@ def is_do_nothing_on_mortgaged_property_enabled(player: str, state: dict) -> boo
 def end_post_roll(state: dict, player: str):
     state[PHASE] = DOUBLES_CHECK
     position = state[PLAYERS][player][POSITION]
-    return f"{player} does nothing because they landed on {state[BOARD][position][NAME]}"
+    return f"{player} ends post roll because they landed on {state[BOARD][position][NAME]}"
 
 
 def is_pay_street_rent_enabled(player: str, state: dict) -> bool:
