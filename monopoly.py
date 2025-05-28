@@ -147,8 +147,12 @@ def push_if_origin_exists_and_has_unpushed(repo: git.Repo):
         # e.g. case in simulations
         # just ignore it
         return
+    try:
+        has_unpushed_commits = repo.git.rev_list('origin/main..main', count=True) != '0'
+    except git.exc.GitCommandError:
+        # the origin main branch does not yes have any commits
+        has_unpushed_commits = True
 
-    has_unpushed_commits = repo.git.rev_list('origin/main..main', count=True) != '0'
     if not has_unpushed_commits:
         # There exist no commits to push
         return
