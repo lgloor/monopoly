@@ -139,6 +139,7 @@ def get_upgradeable_street_idxs(player: str, state: dict) -> list[int]:
     money = state[PLAYERS][player][MONEY]
     for i, square in enumerate(state[BOARD]):
         if (square[TYPE] == STREET
+                and not square[MORTGAGED]
                 and square[LEVEL] < 5
                 and money >= square[HOUSE_COST]
                 and owns_all_of_same_set(player, square[SET], state)
