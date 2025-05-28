@@ -1,4 +1,5 @@
 import itertools
+import random
 import threading
 import time
 from typing import Callable
@@ -30,6 +31,8 @@ def simulate_monopoly(repos: list[git.Repo], initial_commit: git.Commit):
 
 
 def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
+    # push if origin exists and has unpushed commits first in case of connection loss after taking an action.
+    threading.Thread(target=push_if_origin_exists_and_has_unpushed, args=(repo,), daemon=True).start()
     player, state = read_player_and_state(repo)
 
     if is_terminated(state):
@@ -49,8 +52,9 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
             message, action = rand.choice(enabled_actions)
         else:
             message, action = get_wanted_action(enabled_actions)
+
+    print(f"Executing action: {message}")
     if sim:
-        print(f"Executing action: {message}")
         start_time = time.time_ns()
 
     commit_message = action()
@@ -133,23 +137,31 @@ def check_invariants_and_commit(message, repo, state):
         yaml.dump(state, f)
     repo.index.add(f"{repo.working_tree_dir}/state.yml")
     repo.index.commit(f"{message}")
-    threading.Thread(target=push, args=(repo,), daemon=True).start()
 
 
-def push(repo: git.Repo):
-    while True:
+def push_if_origin_exists_and_has_unpushed(repo: git.Repo):
+    try:
+        origin = repo.remote("origin")
+    except ValueError:
+        # The repo does not have an origin remote
+        # e.g. case in simulations
+        # just ignore it
+        return
+
+    has_unpushed_commits = repo.git.rev_list('origin/main..main', count=True) != '0'
+    if not has_unpushed_commits:
+        # There exist no commits to push
+        return
+
+    for n in range(3):
         try:
-            origin = repo.remote("origin")
             origin.push().raise_if_error()
             break
-        except ValueError as e:
-            # The repo does not have an origin remote
-            # e.g. case in simulations
-            # just ignore it
-             break
         except:
-            # Push failed, wait a bit and try again
-            time.sleep(2)
+            # Push failed, use exponential backoff to retry
+            backoff = (2 ** n) + random.randint(0, 1000) / 1000
+            time.sleep(backoff)
+
 
 def check_invariants(state: dict):
     try:
