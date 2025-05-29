@@ -36,8 +36,12 @@ def take_action(repo: git.Repo, sim: bool = False, rand: Random = None) -> bool:
     player, state = read_player_and_state(repo)
 
     if is_terminated(state):
-        print("Game is terminated, WINNER: ", state[WINNER])
-        return True
+        final_push_success = push_if_origin_exists_and_has_unpushed(repo)
+        if final_push_success:
+            print("Game is terminated, WINNER: ", state[WINNER])
+            return True
+        else:
+            return False
 
     enabled_actions = get_enabled_actions(player, state, sim)
 
@@ -110,7 +114,7 @@ def merge_from_remotes(repo: git.Repo):
 
         try:
             remote.fetch('main')
-        except:
+        except Exception as e:
             # remote or its main branch is not available. Just try the next one.
             continue
 
@@ -139,33 +143,29 @@ def check_invariants_and_commit(message, repo, state):
     repo.index.commit(f"{message}")
 
 
-def push_if_origin_exists_and_has_unpushed(repo: git.Repo):
+def push_if_origin_exists_and_has_unpushed(repo: git.Repo) -> bool:
+    #  Return True if push was successful or not required, False otherwise.
+
     try:
         origin = repo.remote("origin")
     except ValueError:
         # The repo does not have an origin remote
         # e.g. case in simulations
         # just ignore it
-        return
+        return True
     try:
         has_unpushed_commits = repo.git.rev_list('origin/main..main', count=True) != '0'
     except git.exc.GitCommandError:
         # the origin main branch does not yes have any commits
         has_unpushed_commits = True
 
-    if not has_unpushed_commits:
-        # There exist no commits to push
-        return
-
-    for n in range(3):
+    if has_unpushed_commits:
         try:
             origin.push().raise_if_error()
-            break
-        except:
-            # Push failed, use exponential backoff to retry
-            backoff = (2 ** n) + random.randint(0, 1000) / 1000
-            time.sleep(backoff)
-
+        except Exception as e:
+            # push failed, try again the next time
+            return False
+    return True
 
 def check_invariants(state: dict):
     try:
